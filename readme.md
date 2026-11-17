@@ -12,11 +12,7 @@ Start server with:
 go run cmd/hvserver/main.go
 ```
 
-Open `http://localhost:6969/health`
-
-## Server overview
-
-1. Login / registration via passkeys
+Open `http://localhost:6969/health`.
 
 ## Recommendation Engine
 
@@ -70,7 +66,7 @@ You can configure them in a `.env` file of a current working directory or via en
 
 ## Development
 
-### Passkeys
+### Passkeys for local development / testing
 
 The server enforces the full WebAuthn ceremony validation in every environment - authentication is
 never bypassed during development. A passkey page is served at `/passkeys`: create an account
