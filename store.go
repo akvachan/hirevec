@@ -458,6 +458,7 @@ func (s Store) CreateUser(email string, fullName string) (uuid.UUID, error) {
 			updated_at
 		)
 		values ($1, $2, nullif($3, ''), $4)
+		on conflict (email) do nothing
 	`, id, email, fullName, CurrentTimestamp())
 	if err != nil {
 		return uuid.Nil(), fmt.Errorf("failed to execute SQL: %w", err)
@@ -2102,7 +2103,7 @@ func (s Store) UserExistsByEmail(email string) (bool, error) {
 		select exists(
 			select 1
 			from users
-			where email = $1
+			where email = $1 collate nocase
 		)
 	`, email).Scan(&exists)
 	if err != nil {

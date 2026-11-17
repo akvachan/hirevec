@@ -24,6 +24,9 @@ create table if not exists users (
   updated_at timestamp not null -- utc, rfc3339
 );
 
+create unique index if not exists idx_users_email
+on users(email collate nocase);
+
 create table if not exists refresh_tokens (
   jti text primary key not null, -- uuid
   user_id text not null, -- uuid
