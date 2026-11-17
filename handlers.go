@@ -327,9 +327,7 @@ func JSON(w http.ResponseWriter, responseBody any, status int) {
 	switch responseBody.(type) {
 	default:
 		w.Header().Set("Content-Type", "application/json")
-	case Problem:
-		w.Header().Set("Content-Type", "application/problem+json")
-	case *Problem:
+	case Problem, *Problem:
 		w.Header().Set("Content-Type", "application/problem+json")
 	}
 
