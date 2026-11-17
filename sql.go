@@ -19,7 +19,7 @@ create table if not exists locations (
 
 create table if not exists users (
   id text primary key not null, -- uuid
-  email text,
+  email text not null check (email != ''),
   full_name text,
   updated_at timestamp not null -- utc, rfc3339
 );

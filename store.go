@@ -457,7 +457,7 @@ func (s Store) CreateUser(email string, fullName string) (uuid.UUID, error) {
 		  full_name,
 			updated_at
 		)
-		values ($1, $2, nullif($3, ''), $4)
+		values ($1, $2, $3, $4)
 		on conflict (email) do nothing
 	`, id, email, fullName, CurrentTimestamp())
 	if err != nil {
