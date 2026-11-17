@@ -31,7 +31,7 @@ type ProblemSource struct {
 
 type Problem struct {
 	Type   ProblemType    `json:"type,omitempty"`
-	Detail string         `json:"error,omitempty"`
+	Detail string         `json:"detail,omitempty"`
 	Source *ProblemSource `json:"source,omitempty"`
 }
 
