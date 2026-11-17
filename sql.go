@@ -17,6 +17,18 @@ create table if not exists locations (
   state text
 );
 
+insert or ignore into locations (id, country, city, state) values
+  (1, 'United States', 'San Francisco', 'California'),
+  (2, 'United States', 'New York', 'New York'),
+  (3, 'United States', 'Seattle', 'Washington'),
+  (4, 'United States', 'Austin', 'Texas'),
+  (5, 'United Kingdom', 'London', null),
+  (6, 'Germany', 'Berlin', null),
+  (7, 'Netherlands', 'Amsterdam', null),
+  (8, 'Poland', 'Warsaw', null),
+  (9, 'Ukraine', 'Kyiv', null),
+  (10, 'Canada', 'Toronto', 'Ontario');
+
 create table if not exists users (
   id text primary key not null, -- uuid
   email text not null check (email != ''),
