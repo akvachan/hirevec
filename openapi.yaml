@@ -12,6 +12,11 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: Path of the created candidate.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -67,6 +72,11 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: Path of the created position.
+              schema:
+                type: string
         '409':
           description: Conflict
           content:
@@ -268,6 +278,11 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: Path of the created recruiter.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -321,6 +336,11 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: Path of the created user.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -1221,6 +1241,11 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: Path of the created user.
+              schema:
+                type: string
           content:
             application/json:
               schema:

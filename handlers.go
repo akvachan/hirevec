@@ -991,6 +991,7 @@ func (a *API) HandlerCreateUser() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Location", fmt.Sprintf("%s/%s", RouteUsers, userID))
 		w.Header().Set("Cache-Control", "no-store")
 		JSON(w, tokenPair, http.StatusCreated)
 	}
@@ -1084,6 +1085,7 @@ func (a *API) HandlerWebAuthnRegisterStart() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Location", fmt.Sprintf("%s/%s", RouteUsers, userID))
 		JSON(w, ResponseBodyWebAuthnRegisterStart{
 			SessionID: sessionID,
 			Options:   options,
@@ -1361,7 +1363,8 @@ func (a *API) HandlerCreateRecruiter() http.HandlerFunc {
 			return
 		}
 
-		if _, err := a.Store.CreateRecruiter(claims.UserID); err != nil {
+		recruiterID, err := a.Store.CreateRecruiter(claims.UserID)
+		if err != nil {
 			if errors.Is(err, ErrRecruiterExists) {
 				JSON(w, Problem{
 					Type:   ProblemTypeRecruiterExists,
@@ -1388,6 +1391,7 @@ func (a *API) HandlerCreateRecruiter() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Location", fmt.Sprintf("%s/%s", RouteRecruiters, recruiterID))
 		w.Header().Set("Cache-Control", "no-store")
 		JSON(w, accessToken, http.StatusCreated)
 	}
@@ -1548,6 +1552,7 @@ func (a *API) HandlerCreateCandidate() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Location", fmt.Sprintf("%s/%s", RouteCandidates, candidateID))
 		w.Header().Set("Cache-Control", "no-store")
 		JSON(w, accessToken, http.StatusCreated)
 	}
@@ -2398,6 +2403,7 @@ func (a *API) HandlerCreatePosition() http.HandlerFunc {
 			}
 		}
 
+		w.Header().Set("Location", fmt.Sprintf("%s/%s", RoutePositions, positionID))
 		w.WriteHeader(http.StatusCreated)
 	}
 }
