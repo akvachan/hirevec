@@ -57,7 +57,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/createcandidate'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /positions:
     post:
       summary: CreatePosition
@@ -83,7 +84,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/createposition'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetPositions
       operationId: getPositions
@@ -165,7 +167,8 @@ paths:
           format: int32
         example: '32'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /reactions:
     post:
       summary: CreateReaction
@@ -198,7 +201,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/createreaction'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetReactions
       operationId: getReactions
@@ -254,7 +258,8 @@ paths:
           format: int32
         example: '32'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /recruiters:
     post:
       summary: CreateRecruiter
@@ -306,7 +311,8 @@ paths:
                 source:
                   pointer: user_id
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /users:
     post:
       summary: CreateUser
@@ -393,7 +399,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetCandidate
       operationId: getCandidate
@@ -434,7 +441,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     patch:
       summary: PatchCandidate
       operationId: patchCandidate
@@ -474,7 +482,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/patchcandidate'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /positions/{id}:
     delete:
       summary: DeletePosition
@@ -513,7 +522,8 @@ paths:
           type: string
         example: b1031c0c-2367-400b-9eb5-79cf9bca423e
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetPosition
       operationId: getPosition
@@ -599,7 +609,8 @@ paths:
           type: string
         example: b1031c0c-2367-400b-9eb5-79cf9bca423e
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     patch:
       summary: PatchPosition
       operationId: patchPosition
@@ -632,7 +643,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/patchposition'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /recruiters/{id}:
     delete:
       summary: DeleteRecruiter
@@ -664,7 +676,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetRecruiter
       operationId: getRecruiter
@@ -714,7 +727,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /users/{id}:
     delete:
       summary: DeleteUser
@@ -746,7 +760,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     get:
       summary: GetUser
       operationId: getUser
@@ -795,7 +810,8 @@ paths:
           type: string
         example: me
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
     patch:
       summary: PatchUser
       operationId: patchUser
@@ -835,7 +851,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/patchuser'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /locations/{id}:
     get:
       summary: GetLocation
@@ -957,7 +974,8 @@ paths:
           format: int32
         example: '32'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /recommendations/{id}:
     get:
       summary: GetRecommendation
@@ -1011,7 +1029,8 @@ paths:
           type: string
         example: b1031c0c-2367-400b-9eb5-79cf9bca423e
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /recommendations:
     get:
       summary: GetRecommendations
@@ -1107,7 +1126,8 @@ paths:
           format: int32
         example: '32'
       security:
-      - bearerAuth: []
+      - BearerAuth: []
+        APIKeyAuth: []
   /health:
     get:
       summary: Health
@@ -1767,7 +1787,12 @@ components:
       description: ''
       required: true
   securitySchemes:
-    bearerAuth:
+    APIKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Optional API key (if server is configured to require it with requests)
+    BearerAuth:
       type: http
       scheme: bearer
       description: Access token issued by POST /users or POST /refresh.
