@@ -39,8 +39,8 @@ The recommendation engine currently only employs a content-based approach. There
 The documentation for the server is available at `./openapi.yaml`. Both the `openpapi.yaml` and the
 SwagerUI docs are served (SwagerUI requires working internet connection to download the bundle):
 
-- SwagerUI: `http://localhost:8888/docs`
-- OpenAPI YAML: `http://localhost:8888/openapi.yaml`
+- SwagerUI: `http://localhost:6969/docs`
+- OpenAPI YAML: `http://localhost:6969/openapi.yaml`
 
 ## Evaluation
 
