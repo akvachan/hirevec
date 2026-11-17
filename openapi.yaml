@@ -1,0 +1,1773 @@
+openapi: 3.0.0
+info:
+  title: Hirevec
+  version: 1.0.0
+  description: Hirevec is a job recommendation engine that matches candidates with positions.
+paths:
+  /candidates:
+    post:
+      summary: CreateCandidate
+      operationId: createCandidate
+      description: ''
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                scope: role:candidate
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:candiate-already-exists
+                detail: Candidate already exists
+                source:
+                  pointer: user_id
+      requestBody:
+        $ref: '#/components/requestBodies/createcandidate'
+      security:
+      - bearerAuth: []
+  /positions:
+    post:
+      summary: CreatePosition
+      operationId: createPosition
+      description: ''
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:position-exists
+                detail: Position with the same title, description and company already exists
+      requestBody:
+        $ref: '#/components/requestBodies/createposition'
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetPositions
+      operationId: getPositions
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    recruiter_id:
+                      type: string
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    company:
+                      type: string
+                    is_remote:
+                      type: boolean
+                    location_id:
+                      type: integer
+                    skill_1:
+                      type: string
+                    skill_2:
+                      type: string
+                    skill_3:
+                      type: string
+                      nullable: true
+                    skill_4:
+                      type: string
+                      nullable: true
+                    skill_5:
+                      type: string
+                      nullable: true
+                    is_active:
+                      type: boolean
+              example:
+              - id: 0194bf5a-1d2e-7c3b-9a4f-5e6d7c8b9a10
+                recruiter_id: 018f6b1a-2c4e-7a3b-8d5f-9e6b2a1c3d40
+                title: Backend Engineer
+                description: We are looking for a backend engineer to build hiring infrastructure.
+                company: Example Corp
+                is_remote: false
+                location_id: 1
+                skill_1: Go
+                skill_2: PostgreSQL
+                skill_3: null
+                skill_4: null
+                skill_5: null
+                is_active: true
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing required role: recruiter'
+      parameters:
+      - name: limit
+        in: query
+        description: Page limit, 32 by default, maximum page size is 128
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '32'
+      security:
+      - bearerAuth: []
+  /reactions:
+    post:
+      summary: CreateReaction
+      operationId: createReaction
+      description: ''
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:reaction-exists
+                detail: Reaction already exists; reactions are immutable
+                source:
+                  parameter: id
+      requestBody:
+        $ref: '#/components/requestBodies/createreaction'
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetReactions
+      operationId: getReactions
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    recommendation_id:
+                      type: string
+                    reaction_type:
+                      type: string
+                    reacted_at:
+                      type: string
+              example:
+              - recommendation_id: 0195d1e2-3f4a-7b5c-8d6e-9f0a1b2c3d40
+                reaction_type: positive
+                reacted_at: '2026-10-25T09:00:00Z'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing one of required roles: recruiter, candidate'
+      parameters:
+      - name: role
+        in: query
+        description: role filter, can be "candidate" or "recruiter"
+        required: true
+        schema:
+          type: string
+        example: candidate
+      - name: limit
+        in: query
+        description: page limit, 32 by default, maximum page size is 128
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '32'
+      security:
+      - bearerAuth: []
+  /recruiters:
+    post:
+      summary: CreateRecruiter
+      operationId: createRecruiter
+      description: ''
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                scope: role:candidate
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:recruiter-exists
+                detail: Recruiter already exists
+                source:
+                  pointer: user_id
+      security:
+      - bearerAuth: []
+  /users:
+    post:
+      summary: CreateUser
+      operationId: createUser
+      description: ''
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                refresh_token: v4.local.CQUT9HnkAMKj_-c88BhsncRV9UJ5JZiItplycs5cnTBoBKRRLe0WKlXuzE9DpUHa2X
+                scope: role:candidate
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:user-exists
+                detail: User with the provided email already exists
+                source:
+                  pointer: email
+      requestBody:
+        $ref: '#/components/requestBodies/createuser'
+  /candidates/{id}:
+    delete:
+      summary: DeleteCandidate
+      operationId: deleteCandidate
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing required role: candidate'
+      parameters:
+      - name: id
+        in: path
+        description: candidate ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetCandidate
+      operationId: getCandidate
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: "{\n  \"id\": \"0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a\",\n  \"user_id\": \"0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a\",\n  \"about\": \"Backend engineer passionate about distributed systems and databases.\",\n  \"pref_remote\": true,\n  \"pref_title_1\": \"Backend Engineer\",\n  \"pref_title_2\": \"Software Engineer\",\n  \"pref_location_1_id\": 1,\n  \"pref_location_2_id\": 2,\n  \"last_recommended_at\": \"2026-10-25T00:00:00Z\",\n  \"experiences\": [{\n    \"id\": \"0199c6d1-2f9a-7b3c-8e4d-5a6f1b2c3d40\",\n    \"candidate_id\": \"0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a\",\n    \"title\": \"Backend Engineer\",\n    \"started_at\": \"2021-06-01T00:00:00Z\",\n    \"ended_at\": \"2024-01-01T00:00:00Z\",\n    \"description\": \"Built ingestion pipelines and internal tooling.\",\n    \"company\": \"Example Corp\",\n    \"experience_type\": \"work\",\n    \"skill_1\": \"Go\",\n    \"skill_2\": \"PostgreSQL\",\n  }]\n}"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:candidate-not-found
+                detail: Candidate not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: candidate ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+    patch:
+      summary: PatchCandidate
+      operationId: patchCandidate
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:invalid-candidate-about-format
+                detail: About must be up to 1024 characters
+                source:
+                  pointer: about
+      parameters:
+      - name: id
+        in: path
+        description: candidate ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      requestBody:
+        $ref: '#/components/requestBodies/patchcandidate'
+      security:
+      - bearerAuth: []
+  /positions/{id}:
+    delete:
+      summary: DeletePosition
+      operationId: deletePosition
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:position-not-found
+                detail: Position not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: position ID in UUID format
+        required: true
+        schema:
+          type: string
+        example: b1031c0c-2367-400b-9eb5-79cf9bca423e
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetPosition
+      operationId: getPosition
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  recruiter_id:
+                    type: string
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  company:
+                    type: string
+                  is_remote:
+                    type: boolean
+                  location_id:
+                    type: integer
+                  skill_1:
+                    type: string
+                  skill_2:
+                    type: string
+                  skill_3:
+                    type: string
+                    nullable: true
+                  skill_4:
+                    type: string
+                    nullable: true
+                  skill_5:
+                    type: string
+                    nullable: true
+                  is_active:
+                    type: boolean
+              example:
+                id: 0194bf5a-1d2e-7c3b-9a4f-5e6d7c8b9a10
+                recruiter_id: 018f6b1a-2c4e-7a3b-8d5f-9e6b2a1c3d40
+                title: Backend Engineer
+                description: We are looking for a backend engineer to build hiring infrastructure.
+                company: Example Corp
+                is_remote: false
+                location_id: 1
+                skill_1: Go
+                skill_2: PostgreSQL
+                skill_3: null
+                skill_4: null
+                skill_5: null
+                is_active: true
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:position-not-found
+                detail: Position not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: position ID in UUID format
+        required: true
+        schema:
+          type: string
+        example: b1031c0c-2367-400b-9eb5-79cf9bca423e
+      security:
+      - bearerAuth: []
+    patch:
+      summary: PatchPosition
+      operationId: patchPosition
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:forbidden
+                detail: You do not have access to this resource
+      parameters:
+      - name: id
+        in: path
+        description: position ID in UUID format
+        required: true
+        schema:
+          type: string
+        example: b1031c0c-2367-400b-9eb5-79cf9bca423e
+      requestBody:
+        $ref: '#/components/requestBodies/patchposition'
+      security:
+      - bearerAuth: []
+  /recruiters/{id}:
+    delete:
+      summary: DeleteRecruiter
+      operationId: deleteRecruiter
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing required role: recruiter'
+      parameters:
+      - name: id
+        in: path
+        description: recruiter ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetRecruiter
+      operationId: getRecruiter
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                id: 018f6b1a-2c4e-7a3b-8d5f-9e6b2a1c3d40
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:recruiter-not-found
+                detail: Recruiter not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: recruiter ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+  /users/{id}:
+    delete:
+      summary: DeleteUser
+      operationId: deleteUser
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:forbidden
+                detail: You do not have access to this resource
+      parameters:
+      - name: id
+        in: path
+        description: user ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+    get:
+      summary: GetUser
+      operationId: getUser
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  updated_at:
+                    type: string
+              example:
+                id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+                email: alex.chen.demo@example.com
+                full_name: Alex Chen
+                updated_at: '2026-10-25T10:00:00Z'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:forbidden
+                detail: You do not have access to this resource
+      parameters:
+      - name: id
+        in: path
+        description: user ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      security:
+      - bearerAuth: []
+    patch:
+      summary: PatchUser
+      operationId: patchUser
+      description: ''
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:invalid-user-full-name-format
+                detail: full_name must be between 2 and 512 characters
+                source:
+                  pointer: /full_name
+      parameters:
+      - name: id
+        in: path
+        description: user ID in UUID format or "me"
+        required: true
+        schema:
+          type: string
+        example: me
+      requestBody:
+        $ref: '#/components/requestBodies/patchuser'
+      security:
+      - bearerAuth: []
+  /locations/{id}:
+    get:
+      summary: GetLocation
+      operationId: getLocation
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  country:
+                    type: string
+                  city:
+                    type: string
+                  state:
+                    type: string
+              example:
+                id: 1
+                country: United States
+                city: San Francisco
+                state: California
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:location-not-found
+                detail: Location not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: location id integer
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '1'
+  /matches:
+    get:
+      summary: GetMatches
+      operationId: getMatches
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    position_id:
+                      type: string
+                    position_title:
+                      type: string
+                    position_company:
+                      type: string
+                    recruiter_id:
+                      type: string
+                    recruiter_full_name:
+                      type: string
+                    matched_at:
+                      type: string
+              example:
+              - position_id: 0194bf5a-1d2e-7c3b-9a4f-5e6d7c8b9a10
+                position_title: Backend Engineer
+                position_company: Example Corp
+                recruiter_id: 018f6b1a-2c4e-7a3b-8d5f-9e6b2a1c3d40
+                recruiter_full_name: Jane Smith
+                matched_at: '2026-10-25T09:30:00Z'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing one of required roles: recruiter, candidate'
+      parameters:
+      - name: role
+        in: query
+        description: role filter, can be "candidate" or "recruiter"
+        required: true
+        schema:
+          type: string
+        example: candidate
+      - name: limit
+        in: query
+        description: page limit, 32 by default, maximum page size is 128
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '32'
+      security:
+      - bearerAuth: []
+  /recommendations/{id}:
+    get:
+      summary: GetRecommendation
+      operationId: getRecommendation
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  position_id:
+                    type: string
+                  candidate_id:
+                    type: string
+              example:
+                id: 0195d1e2-3f4a-7b5c-8d6e-9f0a1b2c3d40
+                position_id: 0194bf5a-1d2e-7c3b-9a4f-5e6d7c8b9a10
+                candidate_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:recommendation-not-found
+                detail: Recommendation not found
+                source:
+                  parameter: id
+      parameters:
+      - name: id
+        in: path
+        description: recommendation ID in UUID format
+        required: true
+        schema:
+          type: string
+        example: b1031c0c-2367-400b-9eb5-79cf9bca423e
+      security:
+      - bearerAuth: []
+  /recommendations:
+    get:
+      summary: GetRecommendations
+      operationId: getRecommendations
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    recommendation_id:
+                      type: string
+                    position_id:
+                      type: string
+                    position_title:
+                      type: string
+                    position_company:
+                      type: string
+                    position_description:
+                      type: string
+                    position_is_remote:
+                      type: boolean
+                    position_location:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        country:
+                          type: string
+                        city:
+                          type: string
+                        state:
+                          type: string
+                    position_skills:
+                      type: array
+                      items:
+                        type: string
+              example:
+              - recommendation_id: 0195d1e2-3f4a-7b5c-8d6e-9f0a1b2c3d40
+                position_id: 0194bf5a-1d2e-7c3b-9a4f-5e6d7c8b9a10
+                position_title: Backend Engineer
+                position_company: Example Corp
+                position_description: We are looking for a backend engineer to build hiring infrastructure.
+                position_is_remote: false
+                position_location:
+                  id: 1
+                  country: United States
+                  city: San Francisco
+                  state: California
+                position_skills:
+                - Go
+                - PostgreSQL
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:missing-required-role
+                detail: 'Missing one of required roles: recruiter, candidate'
+      parameters:
+      - name: role
+        in: query
+        description: Role filter, can be "candidate" or "recruiter"
+        required: true
+        schema:
+          type: string
+        example: candidate
+      - name: include_reacted
+        in: query
+        description: filter out recommendations that the user already reacted to, can be 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False
+        required: true
+        schema:
+          type: boolean
+        example: 'false'
+      - name: limit
+        in: query
+        description: page limit, 32 by default, maximum page size is 128
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '32'
+      security:
+      - bearerAuth: []
+  /health:
+    get:
+      summary: Health
+      operationId: health
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+              example:
+                status: ok
+  /refresh:
+    post:
+      summary: Refresh
+      operationId: refresh
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                refresh_token: v4.local.CQUT9HnkAMKj_-c88BhsncRV9UJ5JZiItplycs5cnTBoBKRRLe0WKlXuzE9DpUHa2X
+                scope: role:candidate
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:invalid-refresh-token
+                detail: Invalid refresh token
+                source:
+                  pointer: /refresh_token
+      requestBody:
+        $ref: '#/components/requestBodies/refresh'
+  /passkeys:
+    get:
+      summary: PasskeysPage
+      operationId: passkeysPage
+      description: Serves the passkey registration and login page.
+      responses:
+        '200':
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                description: HTML document with the account creation form and the sign-in button.
+  /webauthn/register/start:
+    post:
+      summary: WebAuthnRegisterStart
+      operationId: webauthnRegisterStart
+      description: Creates the user account and returns the credential creation options for the passkey ceremony.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  options:
+                    type: object
+                    description: Arguments for navigator.credentials.create().
+              example:
+                session_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7b
+                options:
+                  publicKey:
+                    rp:
+                      id: localhost
+                      name: Hirevec
+                    user:
+                      id: ARw4hIQEAAAA
+                      name: john.doe@gmail.com
+                      displayName: John Doe
+                    challenge: dGhlLXJlZ2lzdHJhdGlvbi1jaGFsbGVuZ2U
+                    pubKeyCredParams:
+                    - type: public-key
+                      alg: -7
+                    timeout: 60000
+                    authenticatorSelection:
+                      residentKey: required
+                      userVerification: preferred
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:user-exists
+                detail: User with the provided email already exists
+                source:
+                  pointer: /email
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      pointer:
+                        type: string
+              example:
+                type: urn:hirevec:user-exists
+                detail: User with the provided email already exists
+                source:
+                  pointer: /email
+      requestBody:
+        $ref: '#/components/requestBodies/webauthnregisterstart'
+  /webauthn/register/finish:
+    post:
+      summary: WebAuthnRegisterFinish
+      operationId: webauthnRegisterFinish
+      description: Validates the attestation response, stores the passkey credential and issues the token pair.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                refresh_token: v4.local.CQUT9HnkAMKj_-c88BhsncRV9UJ5JZiItplycs5cnTBoBKRRLe0WKlXuzE9DpUHa2X
+                scope: ''
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:invalid-webauthn-credential
+                detail: Challenge mismatch
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:invalid-webauthn-credential
+                detail: Webauthn credential not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:webauthn-credential-exists
+                detail: Webauthn credential already exists
+      requestBody:
+        $ref: '#/components/requestBodies/webauthnregisterfinish'
+  /webauthn/login/start:
+    post:
+      summary: WebAuthnLoginStart
+      operationId: webauthnLoginStart
+      description: Begins a discoverable (usernameless) login ceremony; no request body required.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  options:
+                    type: object
+                    description: Arguments for navigator.credentials.get().
+              example:
+                session_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7c
+                options:
+                  publicKey:
+                    rpId: localhost
+                    challenge: dGhlLWxvZ2luLWNoYWxsZW5nZQ
+                    timeout: 60000
+                    userVerification: preferred
+  /webauthn/login/finish:
+    post:
+      summary: WebAuthnLoginFinish
+      operationId: webauthnLoginFinish
+      description: Validates the assertion response and issues the token pair.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+                  user_id:
+                    type: string
+              example:
+                access_token: v4.public.eyJhdWQiOiJoaXJldmVjLmNvbSIsImV4cCI6IjIwMjYtMTAtMDRUMTA6NDM6NThaIiwiaXNzIjoiaGlyZXZlYy5jb20iLCJwcm92aWRlciI6ImVtYWlsIiwic2NvcGUiOiJyb2xlOmNhbmRpZGF0ZSIsInN1YiI6IjAxOTljMGEzLTdjMWItN2Q1ZS05ZjJhLTNiNmM4ZDFlNGY3YSJ9
+                token_type: Bearer
+                expires_in: 1800
+                refresh_token: v4.local.CQUT9HnkAMKj_-c88BhsncRV9UJ5JZiItplycs5cnTBoBKRRLe0WKlXuzE9DpUHa2X
+                scope: ''
+                user_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7a
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:invalid-webauthn-credential
+                detail: Error validating the assertion signature
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+              example:
+                type: urn:hirevec:invalid-webauthn-credential
+                detail: Error validating the assertion signature
+      requestBody:
+        $ref: '#/components/requestBodies/webauthnloginfinish'
+  /locations:
+    get:
+      summary: SearchLocations
+      operationId: searchLocations
+      description: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    country:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+              example:
+              - id: 1
+                country: United States
+                city: San Francisco
+                state: California
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  detail:
+                    type: string
+                  source:
+                    type: object
+                    properties:
+                      parameter:
+                        type: string
+              example:
+                type: urn:hirevec:invalid-location-cursor
+                detail: Invalid cursor; must be a positive integer
+                source:
+                  parameter: cursor
+      parameters:
+      - name: q
+        in: query
+        description: URL-safe, percentage-encoded query string, can be country, city or state
+        required: true
+        schema:
+          type: string
+        example: San Francisco
+      - name: limit
+        in: query
+        description: page limit, 32 by default, maximum page size is 128
+        required: true
+        schema:
+          type: integer
+          format: int32
+        example: '32'
+servers:
+- url: http://localhost:6969
+- url: https://localhost:6969
+components:
+  schemas:
+    createcandidate:
+      type: object
+      properties:
+        about:
+          type: string
+        experiences:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              started_at:
+                type: string
+              ended_at:
+                type: string
+              description:
+                type: string
+              company:
+                type: string
+              experience_type:
+                type: string
+              skill_1:
+                type: string
+              skill_2:
+                type: string
+        pref_remote:
+          type: boolean
+        pref_title_1:
+          type: string
+        pref_title_2:
+          type: string
+        pref_location_1_id:
+          type: integer
+        pref_location_2_id:
+          type: integer
+      example:
+        about: Backend engineer passionate about distributed systems and databases.
+        experiences:
+        - title: Backend Engineer
+          started_at: '2021-06-01T00:00:00Z'
+          ended_at: '2024-01-01T00:00:00Z'
+          description: Built ingestion pipelines and internal tooling.
+          company: Example Corp
+          experience_type: work
+          skill_1: Go
+          skill_2: PostgreSQL
+        pref_remote: true
+        pref_title_1: Backend Engineer
+        pref_title_2: Software Engineer
+        pref_location_1_id: 1
+        pref_location_2_id: 2
+    createposition:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        company:
+          type: string
+        is_remote:
+          type: boolean
+        location_id:
+          type: integer
+        skill_1:
+          type: string
+        skill_2:
+          type: string
+      example:
+        title: Backend Engineer
+        description: We are looking for a backend engineer to build hiring infrastructure.
+        company: Example Corp
+        is_remote: false
+        location_id: 1
+        skill_1: Go
+        skill_2: PostgreSQL
+    createreaction:
+      type: object
+      properties:
+        recommendation_id:
+          type: string
+        reaction_type:
+          type: string
+      example:
+        recommendation_id: 0195d1e2-3f4a-7b5c-8d6e-9f0a1b2c3d40
+        reaction_type: positive
+    createuser:
+      type: object
+      properties:
+        email:
+          type: string
+        full_name:
+          type: string
+      example:
+        email: john.doe@gmail.com
+        full_name: John Doe
+    patchcandidate:
+      type: object
+      properties:
+        about:
+          type: string
+        pref_remote:
+          type: boolean
+      example:
+        about: Backend engineer with a focus on search infrastructure.
+        pref_remote: true
+    patchposition:
+      type: object
+      properties:
+        title:
+          type: string
+        is_active:
+          type: boolean
+      example:
+        title: Senior Backend Engineer
+        is_active: true
+    patchuser:
+      type: object
+      properties:
+        full_name:
+          type: string
+      example:
+        full_name: Alex Chen
+    refresh:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+        grant_type:
+          type: string
+      example:
+        refresh_token: v4.local.CQUT9HnkAMKj_-c88BhsncRV9UJ5JZiItplycs5cnTBoBKRRLe0WKlXuzE9DpUHa2X
+        grant_type: refresh_token
+    webauthnregisterstart:
+      type: object
+      properties:
+        email:
+          type: string
+        full_name:
+          type: string
+      example:
+        email: john.doe@gmail.com
+        full_name: John Doe
+    webauthnregisterfinish:
+      type: object
+      properties:
+        session_id:
+          type: string
+        credential:
+          type: object
+          description: PublicKeyCredential JSON produced by navigator.credentials.create(), serialized as-is.
+      example:
+        session_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7b
+        credential:
+          id: Rk9PQ3JlZGVudGlhbElk
+          rawId: Rk9PQ3JlZGVudGlhbElk
+          type: public-key
+          response:
+            clientDataJSON: eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZE9EcGRISjFZMTVsWTNKbGNYVXVZMngxZEE9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo2OTY5In0
+            attestationObject: o2NmbXRkbm9uZQ
+    webauthnloginfinish:
+      type: object
+      properties:
+        session_id:
+          type: string
+        credential:
+          type: object
+          description: PublicKeyCredential JSON produced by navigator.credentials.get(), serialized as-is.
+      example:
+        session_id: 0199c0a3-7c1b-7d5e-9f2a-3b6c8d1e4f7c
+        credential:
+          id: Rk9PQ3JlZGVudGlhbElk
+          rawId: Rk9PQ3JlZGVudGlhbElk
+          type: public-key
+          response:
+            clientDataJSON: eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiZE9EcGRISjFZMTVsWTNKbGNYVXVZMngxZEE9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo2OTY5In0
+            authenticatorData: dGhlLWF1dGhlbnRpY2F0b3JEYXRh
+            signature: MEUCIQ
+            userHandle: ARw4hIQEAAAA
+  requestBodies:
+    createcandidate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/createcandidate'
+      description: ''
+      required: true
+    createposition:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/createposition'
+      description: ''
+      required: true
+    createreaction:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/createreaction'
+      description: ''
+      required: true
+    createuser:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/createuser'
+      description: ''
+      required: true
+    patchcandidate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/patchcandidate'
+      description: ''
+      required: true
+    patchposition:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/patchposition'
+      description: ''
+      required: true
+    patchuser:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/patchuser'
+      description: ''
+      required: true
+    refresh:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/refresh'
+      description: ''
+      required: true
+    webauthnregisterstart:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/webauthnregisterstart'
+      description: ''
+      required: true
+    webauthnregisterfinish:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/webauthnregisterfinish'
+      description: ''
+      required: true
+    webauthnloginfinish:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/webauthnloginfinish'
+      description: ''
+      required: true
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Access token issued by POST /users or POST /refresh.

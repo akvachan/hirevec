@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/akvachan/hirevec-core"
+	"github.com/akvachan/hirevec/cmd/common"
 )
 
 func main() {
@@ -35,9 +35,9 @@ func main() {
 	flag.Parse()
 
 	slog.SetLogLoggerLevel(slog.LevelError)
-	hirevec.InitLogger(
-		hirevec.MustParseEnv("HIREVEC_LOG_LEVEL", hirevec.ParseLogLevel, slog.LevelInfo),
-		hirevec.MustParseEnv("HIREVEC_LOG_JSON", strconv.ParseBool, false),
+	common.InitLogger(
+		common.MustParseEnv("HIREVEC_LOG_LEVEL", common.ParseLogLevel, slog.LevelInfo),
+		common.MustParseEnv("HIREVEC_LOG_JSON", strconv.ParseBool, false),
 	)
 
 	start := time.Now()

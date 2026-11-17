@@ -1,19 +1,18 @@
 // Copyright (c) 2026 Arsenii Kvachan
 // SPDX-License-Identifier: Unlicense
 
-// Package hirevec implements core server and client.
+// Package hirevec implements core server
 package hirevec
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"net/mail"
 	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -22,31 +21,12 @@ const (
 	DefaultLogLevel = slog.LevelWarn
 )
 
-func InitLogger(level slog.Level, json bool) error {
-	if json {
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
-	} else {
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+func ParseUserFullName(value string) (string, error) {
+	name, err := NormalizeAndValidateText(value, "full_name", DefaultUserFullNameMinLength, DefaultUserFullNameMaxLength, true)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse full_name: %w", err)
 	}
-
-	return nil
-}
-
-var ErrUnknownLogLevel = errors.New("unknown log level")
-
-func ParseLogLevel(value string) (slog.Level, error) {
-	switch value {
-	case "INFO":
-		return slog.LevelInfo, nil
-	case "ERROR":
-		return slog.LevelError, nil
-	case "WARN":
-		return slog.LevelWarn, nil
-	case "DEBUG":
-		return slog.LevelDebug, nil
-	default:
-		return -1, ErrUnknownLogLevel
-	}
+	return name, nil
 }
 
 func ParseEmbeddingsDim(value string) (uint32, error) {
@@ -57,11 +37,19 @@ func ParseEmbeddingsDim(value string) (uint32, error) {
 	return uint32(parsedValue), nil
 }
 
-func ParseUserPassword(value string) (string, error) {
-	if err := ValidateUserPassword(value); err != nil {
-		return "", fmt.Errorf("failed to parse user password: %w", err)
+func ParseStringList(value string) ([]string, error) {
+	result := make([]string, 0, strings.Count(value, ",")+1)
+	for part := range strings.SplitSeq(value, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			result = append(result, part)
+		}
 	}
-	return value, nil
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("list is empty")
+	}
+
+	return result, nil
 }
 
 type AppConfig struct {
@@ -73,114 +61,102 @@ type AppConfig struct {
 	RequestWriteTimeout time.Duration
 	GracePeriod         time.Duration
 
-	SymmetricKey  string
-	AsymmetricKey string
-
-	PostgreSQLURL *url.URL
-
 	LlamaCppURL             *url.URL
-	LlamaCppAPIKey          string
+	LlamaCppAPIKeyFile      string
+	LlamaCppRerankerModel   string
 	LlamaCppEmbeddingsModel string
 	LlamaCppEmbeddingsDim   uint32
-	LlamaCppRerankerModel   string
 
 	EmbeddingsJobFrequency      time.Duration
 	RecommendationsJobFrequency time.Duration
 
-	DevelopmentMode                  bool
-	DevelopmentModeDropTablesOnExit  bool
-	DevelopmentModeTokensNeverExpire bool
-	DevelopmentModeUserFullName      string
-	DevelopmentModeUserName          string
-	DevelopmentModeUserEmail         *mail.Address
-	DevelopmentModeUserPassword      string
+	APIKeyFile string
+
+	WebAuthnRPDisplayName string
+	WebAuthnRPID          string
+	WebAuthnRPOrigins     []string
+
+	SymmetricKeyFile  string
+	AsymmetricKeyFile string
+
+	TLSEnabled  bool
+	TLSCertFile string
+	TLSKeyFile  string
+
+	TrustedProxy bool
 }
 
 func RunApp(c AppConfig) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
-	if err := InitLogger(c.LogLevel, c.LogJSON); err != nil {
-		return fmt.Errorf("failed to init logger: %w", err)
-	}
-
-	if c.DevelopmentMode {
-		slog.Warn("development mode activated")
-		if c.DevelopmentModeDropTablesOnExit {
-			slog.Warn("dropping tables on exit", "development_mode", c.DevelopmentMode)
-		}
-
-		if c.DevelopmentModeUserPassword == "" {
-			return fmt.Errorf("failed to proceed in development mode without user password")
-		}
-	}
-
-	vault, err := NewVault(
-		ctx,
-		VaultConfig{
-			ServerURL:                        c.ServerURL,
-			SymmetricKey:                     c.SymmetricKey,
-			AsymmetricKey:                    c.AsymmetricKey,
-			DevelopmentMode:                  c.DevelopmentMode,
-			DevelopmentModeTokensNeverExpire: c.DevelopmentModeTokensNeverExpire,
-		},
-	)
+	vault, err := NewVault(ctx, VaultConfig{
+		ServerURL:         c.ServerURL,
+		SymmetricKeyPath:  c.SymmetricKeyFile,
+		AsymmetricKeyPath: c.AsymmetricKeyFile,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to init vault: %w", err)
 	}
 
-	dbProvider := DatabaseProviderSQLite
-	if c.PostgreSQLURL.String() != "" {
-		dbProvider = DatabaseProviderPostgreSQL
-	}
-
-	store, err := NewStore(StoreConfig{
-		DatabaseProvider:      dbProvider,
-		PostgreSQLDatabaseURL: c.PostgreSQLURL,
-
-		LlamaCppEmbeddingsDim: c.LlamaCppEmbeddingsDim,
-
-		DevelopmentMode:                 c.DevelopmentMode,
-		DevelopmentModeDropTablesOnExit: c.DevelopmentModeDropTablesOnExit,
-		DevelopmentModeUserFullName:     c.DevelopmentModeUserFullName,
-		DevelopmentModeUserName:         c.DevelopmentModeUserName,
-		DevelopmentModeUserEmail:        c.DevelopmentModeUserEmail,
-		DevelopmentModeUserPassword:     c.DevelopmentModeUserPassword,
-	})
+	store, err := NewStore(StoreConfig{LlamaCppEmbeddingsDim: c.LlamaCppEmbeddingsDim})
 	if err != nil {
 		return fmt.Errorf("failed to init store: %w", err)
 	}
 
 	useLlamaCpp := false
-	if c.LlamaCppURL.String() != "" {
-		if c.LlamaCppAPIKey != "" {
-			useLlamaCpp = true
-		} else {
+	llamaCppAPIKey := ""
+	if c.LlamaCppAPIKeyFile != "" {
+		data, err := os.ReadFile(c.LlamaCppAPIKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to read llama-cpp server API key: %w", err)
+		}
+
+		llamaCppAPIKey = strings.TrimSpace(string(data))
+
+		useLlamaCpp = c.LlamaCppURL.String() != "" && llamaCppAPIKey != ""
+		if !useLlamaCpp {
 			slog.Warn("refusing to use llama-cpp server due to missing API key")
+		}
+	}
+
+	apiKey := ""
+	if c.APIKeyFile != "" {
+		data, err := os.ReadFile(c.APIKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to read API key: %w", err)
+		}
+
+		apiKey = strings.TrimSpace(string(data))
+		if apiKey == "" {
+			slog.Warn("refusing to use empty API key")
 		}
 	}
 
 	return RunAPI(
 		ctx,
 		APIConfig{
-			ServerURL:           c.ServerURL,
-			RequestReadTimeout:  c.RequestReadTimeout,
-			RequestWriteTimeout: c.RequestWriteTimeout,
-			GracePeriod:         c.GracePeriod,
-
-			LlamaCppURL:             c.LlamaCppURL.String(),
-			LlamaCppAPIKey:          c.LlamaCppAPIKey,
-			LlamaCppRerankerModel:   c.LlamaCppRerankerModel,
-			LlamaCppEmbeddingsDim:   c.LlamaCppEmbeddingsDim,
-			LlamaCppEmbeddingsModel: c.LlamaCppEmbeddingsModel,
-
+			ServerURL:                   c.ServerURL,
+			RequestReadTimeout:          c.RequestReadTimeout,
+			RequestWriteTimeout:         c.RequestWriteTimeout,
+			GracePeriod:                 c.GracePeriod,
+			WebAuthnRPDisplayName:       c.WebAuthnRPDisplayName,
+			WebAuthnRPID:                c.WebAuthnRPID,
+			WebAuthnRPOrigins:           c.WebAuthnRPOrigins,
+			LlamaCppURL:                 c.LlamaCppURL.String(),
+			LlamaCppAPIKey:              llamaCppAPIKey,
+			LlamaCppRerankerModel:       c.LlamaCppRerankerModel,
+			LlamaCppEmbeddingsDim:       c.LlamaCppEmbeddingsDim,
+			LlamaCppEmbeddingsModel:     c.LlamaCppEmbeddingsModel,
 			UseEmbeddings:               useLlamaCpp,
 			UseReranker:                 useLlamaCpp,
+			TLSEnabled:                  c.TLSEnabled,
+			TLSCertFile:                 c.TLSCertFile,
+			TLSKeyFile:                  c.TLSKeyFile,
+			TrustedProxy:                c.TrustedProxy,
+			APIKey:                      apiKey,
 			EmbeddingsJobFrequency:      c.EmbeddingsJobFrequency,
 			RecommendationsJobFrequency: c.RecommendationsJobFrequency,
-
-			DevelopmentMode:                 c.DevelopmentMode,
-			DevelopmentModeDropTablesOnExit: c.DevelopmentModeDropTablesOnExit,
 		},
 		store,
 		vault,

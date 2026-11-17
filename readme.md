@@ -12,6 +12,12 @@ Start server with:
 go run cmd/hvserver/main.go
 ```
 
+Open `http://localhost:6969/health`
+
+## Server overview
+
+1. Login / registration via passkeys
+
 ## Recommendation Engine
 
 The recommendation engine currently only employs a content-based approach. There are currently two stages:
@@ -23,6 +29,14 @@ The recommendation engine currently only employs a content-based approach. There
 2. Rerank (Optional)
 
    One can enable a reranker to reduce the pool of candidates further and establish a better ranking, this can be done regradless of which database you use.
+
+## Documentation
+
+The documentation for the server is available at `./openapi.yaml`. Both the `openpapi.yaml` and the
+SwagerUI docs are served (SwagerUI requires working internet connection to download the bundle):
+
+- SwagerUI: `http://localhost:8888/docs`
+- OpenAPI YAML: `http://localhost:8888/openapi.yaml`
 
 ## Evaluation
 
@@ -38,7 +52,7 @@ git lfs pull data/evaluation_dataset/1/
 go run cmd/genevals/main.go
 ```
 
-or 
+or
 
 ```sh
 go run cmd/genevals/main.go \
@@ -54,9 +68,20 @@ go run cmd/genevals/main.go \
 All currently available server settings are demonstrated in [.example.env](./.example.env).
 You can configure them in a `.env` file of a current working directory or via environment variables.
 
-## Misc
+## Development
 
-### Hot-reload server
+### Passkeys
+
+The server enforces the full WebAuthn ceremony validation in every environment - authentication is
+never bypassed during development. A passkey page is served at `/passkeys`: create an account
+with a passkey (email + full name, secured by Touch ID or any platform authenticator) and sign back
+in with a single click - no details needed. The page displays the resulting access and refresh
+tokens; use them in Bruno or any HTTP client as a Bearer token.
+
+Open `http://localhost:6969/passkeys`. The relying party ID and origins default to the host of
+`HIREVEC_URL` - test against the same origin the server is configured with.
+
+### Hot-reload
 
 ```sh
 air \
