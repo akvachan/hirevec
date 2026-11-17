@@ -4,8 +4,8 @@
 
 TLS is disabled by default, because:
 
-A) You may run this app via a reverse proxy that already enables TLS communication.
-B) You are developing and don't want to experience the burden of TLS-related infra, including setting up a proper CA and securing local certificate management.
+- You may run this app via a reverse proxy that already enables TLS communication.
+- You are developing and don't want to experience the burden of TLS-related infra, including setting up a proper CA and securing local certificate management.
 
 You can enable TLS via `HIREVEC_TLS_ENABLED=true`. You must then provide `HIREVEC_TLS_CERT_FILE`
 and `HIREVEC_TLS_KEY_FILE`. Make sure that these files are configured to have 0o600 permissions,
