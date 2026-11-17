@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"golang.org/x/time/rate"
 )
 
 type Method string
@@ -46,23 +49,45 @@ const (
 	RouteUsers                  Route = "/users"
 )
 
+var (
+	RateLimitHealth  rate.Limit = 20
+	RateLimitStatic  rate.Limit = 20
+	RateLimitRead    rate.Limit = 10
+	RateLimitWrite   rate.Limit = 2
+	RateLimitDelete  rate.Limit = 1
+	RateLimitSearch  rate.Limit = 3
+	RateLimitAuth    rate.Limit = rate.Every(time.Minute)
+	RateLimitRefresh rate.Limit = rate.Every(time.Minute)
+
+	BurstHealth  = 20
+	BurstStatic  = 10
+	BurstRead    = 20
+	BurstWrite   = 5
+	BurstDelete  = 2
+	BurstSearch  = 10
+	BurstAuth    = 5
+	BurstRefresh = 5
+)
+
 type RouteConfig struct {
-	Method      Method
-	Handler     http.HandlerFunc
-	Middlewares []Middleware
-	Route       Route
-	Roles       []Role
+	Method    Method
+	Handler   http.HandlerFunc
+	Route     Route
+	Roles     []Role
+	RateLimit rate.Limit
+	Burst     int
 }
 
 func (a *API) PublicRoute(c RouteConfig) {
 	handler := a.MiddlewareChain(
 		c.Handler,
 		a.MiddlewareLogging,
+		a.MiddlewareRateLimiter(c.RateLimit, c.Burst),
+		a.MiddlewareAPIKey,
 		a.MiddlewareSecurityHeaders,
 		a.MiddlewarePanicRecovery,
 		a.MiddlewareMaxBytesLimit,
 	)
-	handler = a.MiddlewareChain(handler, c.Middlewares...)
 
 	a.Mux.Handle(
 		fmt.Sprintf("%s %s", c.Method, c.Route),
@@ -79,12 +104,13 @@ func (a *API) PrivateRoute(c RouteConfig) {
 	handler := a.MiddlewareChain(
 		c.Handler,
 		a.MiddlewareLogging,
+		a.MiddlewareRateLimiter(c.RateLimit, c.Burst),
+		a.MiddlewareAPIKey,
 		a.MiddlewareSecurityHeaders,
 		a.MiddlewarePanicRecovery,
 		a.MiddlewareMaxBytesLimit,
 		a.MiddlewareAuthorization(rolesMap),
 	)
-	handler = a.MiddlewareChain(handler, c.Middlewares...)
 
 	a.Mux.Handle(
 		fmt.Sprintf("%s %s", c.Method, c.Route),
@@ -96,233 +122,267 @@ func (a *API) RegisterRoutes() {
 	slog.Debug("registering routes")
 
 	a.PublicRoute(RouteConfig{
-		Method:  MethodGet,
-		Route:   RouteOpenAPI,
-		Handler: a.HandlerOpenAPI,
+		Method:    MethodGet,
+		Route:     RouteOpenAPI,
+		Handler:   a.HandlerOpenAPI,
+		RateLimit: RateLimitStatic,
+		Burst:     BurstStatic,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:  MethodGet,
-		Route:   RouteDocs,
-		Handler: a.HandlerDocs,
+		Method:    MethodGet,
+		Route:     RouteDocs,
+		Handler:   a.HandlerDocs,
+		RateLimit: RateLimitStatic,
+		Burst:     BurstStatic,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:  MethodGet,
-		Route:   RouteHealth,
-		Handler: a.HandlerHealth,
+		Method:    MethodGet,
+		Route:     RouteHealth,
+		Handler:   a.HandlerHealth,
+		RateLimit: RateLimitHealth,
+		Burst:     BurstHealth,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:  MethodGet,
-		Route:   RoutePasskeys,
-		Handler: a.HandlerPasskeys,
+		Method:    MethodGet,
+		Route:     RoutePasskeys,
+		Handler:   a.HandlerPasskeys,
+		RateLimit: RateLimitStatic,
+		Burst:     BurstStatic,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RouteRefresh,
-		Handler:     a.HandleRefresh(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
+		Method:    MethodPost,
+		Route:     RouteWebauthnRegisterStart,
+		Handler:   a.HandlerWebAuthnRegisterStart(),
+		RateLimit: RateLimitAuth,
+		Burst:     BurstAuth,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RouteUsers,
-		Handler:     a.HandlerCreateUser(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
+		Method:    MethodPost,
+		Route:     RouteWebauthnRegisterFinish,
+		Handler:   a.HandlerWebAuthnRegisterFinish(),
+		RateLimit: RateLimitAuth,
+		Burst:     BurstAuth,
 	})
 
 	a.PublicRoute(RouteConfig{
+		Method:    MethodPost,
+		Route:     RouteWebauthnLoginStart,
+		Handler:   a.HandlerWebAuthnLoginStart(),
+		RateLimit: RateLimitAuth,
+		Burst:     BurstAuth,
+	})
+
+	a.PublicRoute(RouteConfig{
+		Method:    MethodPost,
+		Route:     RouteWebauthnLoginFinish,
+		Handler:   a.HandlerWebAuthnLoginFinish(),
+		RateLimit: RateLimitAuth,
+		Burst:     BurstAuth,
+	})
+
+	a.PublicRoute(RouteConfig{
+		Method:    MethodPost,
+		Route:     RouteRefresh,
+		Handler:   a.HandleRefresh(),
+		RateLimit: RateLimitRefresh,
+		Burst:     BurstRefresh,
+	})
+
+	a.PublicRoute(RouteConfig{
+		Method:    MethodPost,
+		Route:     RouteUsers,
+		Handler:   a.HandlerCreateUser(),
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteUser,
+		Handler:   a.HandlerGetUser(),
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodPatch,
+		Route:     RouteUser,
+		Handler:   a.HandlerPatchUser(),
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodDelete,
+		Route:     RouteUser,
+		Handler:   a.HandlerDeleteUser(),
+		RateLimit: RateLimitDelete,
+		Burst:     BurstDelete,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodPost,
+		Route:     RouteCandidates,
+		Handler:   a.HandlerCreateCandidate(),
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteCandidate,
+		Handler:   a.HandlerGetCandidate(),
+		Roles:     []Role{RoleRecruiter, RoleCandidate},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodPatch,
+		Route:     RouteCandidate,
+		Handler:   a.HandlerPatchCandidate(),
+		Roles:     []Role{RoleCandidate},
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodDelete,
+		Route:     RouteCandidate,
+		Handler:   a.HandlerDeleteCandidate(),
+		Roles:     []Role{RoleCandidate},
+		RateLimit: RateLimitDelete,
+		Burst:     BurstDelete,
+	})
+
+	a.PrivateRoute(RouteConfig{
 		Method:  MethodPost,
-		Route:   RouteWebauthnRegisterStart,
-		Handler: a.HandlerWebAuthnRegisterStart(),
+		Route:   RouteRecruiters,
+		Handler: a.HandlerCreateRecruiter(),
 	})
 
-	a.PublicRoute(RouteConfig{
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteRecruiter,
+		Handler:   a.HandlerGetRecruiter(),
+		Roles:     []Role{RoleRecruiter, RoleCandidate},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodDelete,
+		Route:     RouteRecruiter,
+		Handler:   a.HandlerDeleteRecruiter(),
+		Roles:     []Role{RoleRecruiter},
+		RateLimit: RateLimitDelete,
+		Burst:     BurstDelete,
+	})
+
+	a.PrivateRoute(RouteConfig{
 		Method:  MethodPost,
-		Route:   RouteWebauthnRegisterFinish,
-		Handler: a.HandlerWebAuthnRegisterFinish(),
+		Route:   RoutePositions,
+		Handler: a.HandlerCreatePosition(),
+		Roles:   []Role{RoleRecruiter},
 	})
 
-	a.PublicRoute(RouteConfig{
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RoutePositions,
+		Handler:   a.HandlerGetPositions(),
+		Roles:     []Role{RoleRecruiter},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RoutePosition,
+		Handler:   a.HandlerGetPosition(),
+		Roles:     []Role{RoleRecruiter, RoleCandidate},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodPatch,
+		Route:     RoutePosition,
+		Handler:   a.HandlerPatchPosition(),
+		Roles:     []Role{RoleRecruiter},
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodDelete,
+		Route:     RoutePosition,
+		Handler:   a.HandlerDeletePosition(),
+		Roles:     []Role{RoleRecruiter},
+		RateLimit: RateLimitDelete,
+		Burst:     BurstDelete,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteRecommendations,
+		Handler:   a.HandlerGetRecommendations(),
+		Roles:     []Role{RoleCandidate, RoleRecruiter},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteRecommendation,
+		Handler:   a.HandlerGetRecommendation(),
+		Roles:     []Role{RoleCandidate, RoleRecruiter},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteReactions,
+		Handler:   a.HandlerGetReactions(),
+		Roles:     []Role{RoleCandidate, RoleRecruiter},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
+	})
+
+	a.PrivateRoute(RouteConfig{
 		Method:  MethodPost,
-		Route:   RouteWebauthnLoginStart,
-		Handler: a.HandlerWebAuthnLoginStart(),
+		Route:   RouteReactions,
+		Handler: a.HandlerCreateReaction(),
+		Roles:   []Role{RoleCandidate, RoleRecruiter},
+	})
+
+	a.PrivateRoute(RouteConfig{
+		Method:    MethodGet,
+		Route:     RouteMatches,
+		Handler:   a.HandlerGetMatches(),
+		Roles:     []Role{RoleCandidate, RoleRecruiter},
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:  MethodPost,
-		Route:   RouteWebauthnLoginFinish,
-		Handler: a.HandlerWebAuthnLoginFinish(),
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteUser,
-		Handler:     a.HandlerGetUser(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPatch,
-		Route:       RouteUser,
-		Handler:     a.HandlerPatchUser(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodDelete,
-		Route:       RouteUser,
-		Handler:     a.HandlerDeleteUser(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RouteCandidates,
-		Handler:     a.HandlerCreateCandidate(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteCandidate,
-		Handler:     a.HandlerGetCandidate(),
-		Roles:       []Role{RoleRecruiter, RoleCandidate},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPatch,
-		Route:       RouteCandidate,
-		Handler:     a.HandlerPatchCandidate(),
-		Roles:       []Role{RoleCandidate},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodDelete,
-		Route:       RouteCandidate,
-		Handler:     a.HandlerDeleteCandidate(),
-		Roles:       []Role{RoleCandidate},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RouteRecruiters,
-		Handler:     a.HandlerCreateRecruiter(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteRecruiter,
-		Handler:     a.HandlerGetRecruiter(),
-		Roles:       []Role{RoleRecruiter, RoleCandidate},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodDelete,
-		Route:       RouteRecruiter,
-		Handler:     a.HandlerDeleteRecruiter(),
-		Roles:       []Role{RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RoutePositions,
-		Handler:     a.HandlerCreatePosition(),
-		Roles:       []Role{RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RoutePositions,
-		Handler:     a.HandlerGetPositions(),
-		Roles:       []Role{RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RoutePosition,
-		Handler:     a.HandlerGetPosition(),
-		Roles:       []Role{RoleRecruiter, RoleCandidate},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPatch,
-		Route:       RoutePosition,
-		Handler:     a.HandlerPatchPosition(),
-		Roles:       []Role{RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodDelete,
-		Route:       RoutePosition,
-		Handler:     a.HandlerDeletePosition(),
-		Roles:       []Role{RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteRecommendations,
-		Handler:     a.HandlerGetRecommendations(),
-		Roles:       []Role{RoleCandidate, RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteRecommendation,
-		Handler:     a.HandlerGetRecommendation(),
-		Roles:       []Role{RoleCandidate, RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteReactions,
-		Handler:     a.HandlerGetReactions(),
-		Roles:       []Role{RoleCandidate, RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodPost,
-		Route:       RouteReactions,
-		Handler:     a.HandlerCreateReaction(),
-		Roles:       []Role{RoleCandidate, RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PrivateRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteMatches,
-		Handler:     a.HandlerGetMatches(),
-		Roles:       []Role{RoleCandidate, RoleRecruiter},
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
+		Method:    MethodGet,
+		Route:     RouteLocations,
+		Handler:   a.HandlerSearchLocations(),
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
 	})
 
 	a.PublicRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteLocations,
-		Handler:     a.HandlerSearchLocations(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
-	})
-
-	a.PublicRoute(RouteConfig{
-		Method:      MethodGet,
-		Route:       RouteLocation,
-		Handler:     a.HandlerGetLocation(),
-		Middlewares: []Middleware{a.MiddlewareAPIKey},
+		Method:    MethodGet,
+		Route:     RouteLocation,
+		Handler:   a.HandlerGetLocation(),
+		RateLimit: RateLimitRead,
+		Burst:     BurstRead,
 	})
 }

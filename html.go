@@ -224,7 +224,11 @@ const PasskeysPageHTML = `
                 done(p);
 
             } catch (e) {
-                out(e.error ?? e.message);
+							out(
+								e instanceof Error
+									? e.message
+									: JSON.stringify(e, null, 2)
+							);
             }
         }
 
@@ -269,7 +273,11 @@ const PasskeysPageHTML = `
                 done(p);
 
             } catch (e) {
-                out(e.error ?? e.message);
+							out(
+								e instanceof Error
+									? e.message
+									: JSON.stringify(e, null, 2)
+							);
             }
         }
 
@@ -292,7 +300,13 @@ const PasskeysPageHTML = `
                     u.full_name +
                     ' (' + u.email + ')\n\n';
 
-            } catch {}
+            } catch {
+							out(
+								e instanceof Error
+									? e.message
+									: JSON.stringify(e, null, 2)
+							);
+						}
 
             out(who + JSON.stringify(pair, null, 2));
         }

@@ -32,6 +32,7 @@ func main() {
 		RequestReadTimeout:  common.MustParseEnv("HIREVEC_REQUEST_READ_TIMEOUT", time.ParseDuration, hirevec.DefaultRequestReadTimeout),
 		RequestWriteTimeout: common.MustParseEnv("HIREVEC_REQUEST_WRITE_TIMEOUT", time.ParseDuration, hirevec.DefaultRequestWriteTimeout),
 		GracePeriod:         common.MustParseEnv("HIREVEC_GRACE_PERIOD", time.ParseDuration, hirevec.DefaultGracePeriod),
+		RateLimitingEnabled: common.MustParseEnv("HIREVEC_RATE_LIMITING_ENABLED", strconv.ParseBool, true),
 
 		LlamaCppURL:             common.MustParseEnv("HIREVEC_LLAMACPP_URL", url.Parse, &url.URL{Host: ""}),
 		LlamaCppEmbeddingsModel: os.Getenv("HIREVEC_LLAMACPP_EMBEDDINGS_MODEL"),

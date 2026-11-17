@@ -7,18 +7,120 @@ import (
 	"context"
 	"crypto/subtle"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
 
+type Visitor struct {
+	Limiter  *rate.Limiter
+	LastSeen atomic.Int64
+}
+
+type LimiterKey struct {
+	IP       string
+	Method   string
+	Endpoint string
+}
+
+type RateLimiter struct {
+	Visitors map[LimiterKey]*Visitor
+	Mu       sync.RWMutex
+}
+
+func (rl *RateLimiter) GetLimiter(key LimiterKey, limit rate.Limit, burst int) *rate.Limiter {
+	rl.Mu.RLock()
+	visitor, exists := rl.Visitors[key]
+	rl.Mu.RUnlock()
+
+	if !exists {
+		rl.Mu.Lock()
+
+		visitor, exists = rl.Visitors[key]
+		if !exists {
+			visitor = &Visitor{
+				Limiter: rate.NewLimiter(limit, burst),
+			}
+			rl.Visitors[key] = visitor
+		}
+
+		rl.Mu.Unlock()
+	}
+
+	visitor.LastSeen.Store(time.Now().Unix())
+
+	return visitor.Limiter
+}
+
+func (rl *RateLimiter) Allow(limiter *rate.Limiter) (bool, time.Duration) {
+	reservation := limiter.Reserve()
+
+	if !reservation.OK() {
+		return false, 0
+	}
+
+	delay := reservation.Delay()
+
+	if delay > 0 {
+		reservation.Cancel()
+		return false, delay
+	}
+
+	return true, 0
+}
+
+func (a *API) MiddlewareRateLimiter(rateLimit rate.Limit, burst int) Middleware {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if !a.RateLimitingEnabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			endpoint := r.Pattern
+			if endpoint == "" {
+				endpoint = r.URL.Path
+			}
+
+			limiter := a.RateLimiter.GetLimiter(
+				LimiterKey{
+					IP:       a.ClientIP(r),
+					Method:   r.Method,
+					Endpoint: endpoint,
+				},
+				rateLimit,
+				burst,
+			)
+			allowed, retryAfter := a.RateLimiter.Allow(limiter)
+
+			if !allowed {
+				w.Header().Set("Retry-After", strconv.Itoa(max(int(math.Ceil(retryAfter.Seconds())), 1)))
+				JSON(w, Problem{
+					Type:   ProblemTypeRateLimitExceeded,
+					Detail: "rate limit exceeded",
+				}, http.StatusTooManyRequests)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		}
+	}
+}
+
 func (a *API) MiddlewareSecurityHeaders(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		if a.TLSEnabled {
 			w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		}

@@ -3,9 +3,10 @@ module github.com/akvachan/hirevec
 go 1.27.0
 
 require (
-	aidanwoods.dev/go-paseto v1.6.0 // PASETO, for access and refresh tokens
+	aidanwoods.dev/go-paseto v1.6.0
 	github.com/go-webauthn/webauthn v0.18.2
-	modernc.org/sqlite v1.60.1 // SQLite driver
+	golang.org/x/time v0.16.0
+	modernc.org/sqlite v1.60.1
 )
 
 require (

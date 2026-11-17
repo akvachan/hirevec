@@ -21,6 +21,7 @@ type APIConfig struct {
 	RequestReadTimeout  time.Duration
 	RequestWriteTimeout time.Duration
 	GracePeriod         time.Duration
+	RateLimitingEnabled bool
 
 	LlamaCppURL             string
 	LlamaCppAPIKey          string // TODO: Make this a secret value
@@ -45,15 +46,17 @@ type APIConfig struct {
 }
 
 type API struct {
-	ServerURL    *url.URL
-	APIKey       string // TODO: Make this a secret value
-	TLSEnabled   bool
-	TrustedProxy bool
-	Store        Store
-	Vault        Vault
-	Server       http.Server
-	Mux          *http.ServeMux
-	WebAuthn     *webauthn.WebAuthn
+	ServerURL           *url.URL
+	APIKey              string // TODO: Make this a secret value
+	TLSEnabled          bool
+	RateLimitingEnabled bool
+	RateLimiter         *RateLimiter
+	TrustedProxy        bool
+	Store               Store
+	Vault               Vault
+	Server              http.Server
+	Mux                 *http.ServeMux
+	WebAuthn            *webauthn.WebAuthn
 }
 
 const (
@@ -105,14 +108,15 @@ func NewAPI(ctx context.Context, c APIConfig, s Store, v Vault) (*API, error) {
 	}
 
 	api := API{
-		ServerURL:    c.ServerURL,
-		APIKey:       c.APIKey,
-		TLSEnabled:   c.TLSEnabled,
-		TrustedProxy: c.TrustedProxy,
-		Store:        s,
-		Vault:        v,
-		Mux:          http.NewServeMux(),
-		WebAuthn:     wan,
+		ServerURL:           c.ServerURL,
+		APIKey:              c.APIKey,
+		TLSEnabled:          c.TLSEnabled,
+		TrustedProxy:        c.TrustedProxy,
+		RateLimitingEnabled: c.RateLimitingEnabled,
+		Store:               s,
+		Vault:               v,
+		Mux:                 http.NewServeMux(),
+		WebAuthn:            wan,
 	}
 
 	api.Server = http.Server{
@@ -122,6 +126,10 @@ func NewAPI(ctx context.Context, c APIConfig, s Store, v Vault) (*API, error) {
 		ErrorLog:     slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
 		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		Handler:      api.Mux,
+	}
+
+	if c.RateLimitingEnabled {
+		api.RateLimiter = &RateLimiter{Visitors: make(map[LimiterKey]*Visitor)}
 	}
 
 	api.RegisterRoutes()
@@ -208,6 +216,14 @@ func RunAPI(ctx context.Context, c APIConfig, s Store, v Vault) error {
 			}
 		}
 	}()
+
+	if c.RateLimitingEnabled {
+		go func() {
+			for range time.Tick(DefaultVisitorsCleanupJobFrequency) {
+				api.RunCleanupVisitors()
+			}
+		}()
+	}
 
 	if err := api.WaitAndShutdown(ctx, errCh, c.GracePeriod); err != nil {
 		return fmt.Errorf("failed to wait and shutdown: %w", err)

@@ -60,6 +60,7 @@ type AppConfig struct {
 	RequestReadTimeout  time.Duration
 	RequestWriteTimeout time.Duration
 	GracePeriod         time.Duration
+	RateLimitingEnabled bool
 
 	LlamaCppURL             *url.URL
 	LlamaCppAPIKeyFile      string
@@ -140,6 +141,7 @@ func RunApp(c AppConfig) error {
 			RequestReadTimeout:          c.RequestReadTimeout,
 			RequestWriteTimeout:         c.RequestWriteTimeout,
 			GracePeriod:                 c.GracePeriod,
+			RateLimitingEnabled:         c.RateLimitingEnabled,
 			WebAuthnRPDisplayName:       c.WebAuthnRPDisplayName,
 			WebAuthnRPID:                c.WebAuthnRPID,
 			WebAuthnRPOrigins:           c.WebAuthnRPOrigins,

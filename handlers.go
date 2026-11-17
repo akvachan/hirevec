@@ -54,13 +54,13 @@ type RequestBodyCreatePosition struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Company     string `json:"company"`
-	IsRemote    bool   `json:"is_remote"`
-	LocationID  uint32 `json:"location_id"`
 	Skill1      string `json:"skill_1"`
 	Skill2      string `json:"skill_2"`
 	Skill3      string `json:"skill_3"`
 	Skill4      string `json:"skill_4"`
 	Skill5      string `json:"skill_5"`
+	IsRemote    bool   `json:"is_remote"`
+	LocationID  uint32 `json:"location_id"`
 }
 
 type RequestBodyPatchPosition struct {
@@ -218,6 +218,7 @@ const (
 	ProblemTypeWebAuthnSessionNotFound          ProblemType = "urn:hirevec:webauthn-session-not-found"
 	ProblemTypeInvalidWebAuthnCredential        ProblemType = "urn:hirevec:invalid-webauthn-credential"
 	ProblemTypeWebAuthnCredentialExists         ProblemType = "urn:hirevec:webauthn-credential-exists"
+	ProblemTypeRateLimitExceeded                ProblemType = "urn:hirevec:rate-limit-exceeded"
 )
 
 const (

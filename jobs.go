@@ -14,6 +14,8 @@ const (
 	DefaultEmbeddingsJobFrequency      = 1 * time.Hour
 	DefaultRecommendationsJobFrequency = 24 * time.Hour
 	DefaultWebAuthnCleanupJobFrequency = 15 * time.Minute
+	DefaultVisitorsCleanupJobFrequency = 1 * time.Minute
+	DefaultVisitorsInactivityFrame     = 24 * time.Hour
 )
 
 func (a *API) RunWebAuthnCleanupJob() error {
@@ -147,4 +149,40 @@ func (a *API) RunEmbeddingsJob(c AIConfig) error {
 	}
 
 	return tx.Commit()
+}
+
+func (a *API) RunCleanupVisitors() {
+	var expired []LimiterKey
+
+	a.RateLimiter.Mu.RLock()
+
+	now := time.Now().Unix()
+	exp := int64(DefaultVisitorsInactivityFrame.Seconds())
+	for key, visitor := range a.RateLimiter.Visitors {
+		if now-visitor.LastSeen.Load() > exp {
+			expired = append(expired, key)
+		}
+	}
+
+	a.RateLimiter.Mu.RUnlock()
+
+	if len(expired) == 0 {
+		return
+	}
+
+	a.RateLimiter.Mu.Lock()
+
+	now = time.Now().Unix()
+	for _, key := range expired {
+		visitor, exists := a.RateLimiter.Visitors[key]
+		if !exists {
+			continue
+		}
+		lastSeen := visitor.LastSeen.Load()
+		if now-lastSeen > exp {
+			delete(a.RateLimiter.Visitors, key)
+		}
+	}
+
+	a.RateLimiter.Mu.Unlock()
 }
