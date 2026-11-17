@@ -285,10 +285,12 @@ func (a *API) RegisterRoutes() {
 	})
 
 	a.PrivateRoute(RouteConfig{
-		Method:  MethodPost,
-		Route:   RoutePositions,
-		Handler: a.HandlerCreatePosition(),
-		Roles:   []Role{RoleRecruiter},
+		Method:    MethodPost,
+		Route:     RoutePositions,
+		Handler:   a.HandlerCreatePosition(),
+		Roles:     []Role{RoleRecruiter},
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
 	})
 
 	a.PrivateRoute(RouteConfig{
@@ -355,10 +357,12 @@ func (a *API) RegisterRoutes() {
 	})
 
 	a.PrivateRoute(RouteConfig{
-		Method:  MethodPost,
-		Route:   RouteReactions,
-		Handler: a.HandlerCreateReaction(),
-		Roles:   []Role{RoleCandidate, RoleRecruiter},
+		Method:    MethodPost,
+		Route:     RouteReactions,
+		Handler:   a.HandlerCreateReaction(),
+		Roles:     []Role{RoleCandidate, RoleRecruiter},
+		RateLimit: RateLimitWrite,
+		Burst:     BurstWrite,
 	})
 
 	a.PrivateRoute(RouteConfig{
