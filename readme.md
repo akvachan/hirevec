@@ -6,13 +6,21 @@ Hirevec is a modern job recommendation engine that finds jobs and suitable candi
 
 ## Quick start
 
-Start server with:
+1. Start server
 
 ```sh
 go run cmd/hvserver/main.go
 ```
 
-Open `http://localhost:6969/health`.
+2. Access documentation under `localhost:6969/docs` and try sending couple of requests:
+
+- Create user
+- Copy `refresh_token` and `access_token` and store them somewhere safe.
+- Paste `access_token` into BearerAuth value (click on the green `Authorize` button with a padlock).
+- Create a recruiter profile or candidate profile.
+- As a candidate, after creating candidate profile, you can already fetch your first recommendations.
+- As a recruiter, after creating position, you can already fetch your first recommendations.
+- Retrieve matches and chat (coming soon)!
 
 ## Recommendation Engine
 
