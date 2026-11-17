@@ -36,7 +36,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -70,7 +70,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -146,7 +146,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -180,7 +180,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -230,7 +230,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -292,7 +292,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -348,7 +348,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -379,7 +379,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -414,7 +414,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -453,7 +453,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -495,7 +495,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -582,7 +582,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -621,7 +621,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -656,7 +656,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -700,7 +700,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -740,7 +740,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -790,7 +790,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -822,7 +822,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -882,7 +882,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -946,7 +946,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1002,7 +1002,7 @@ paths:
         '404':
           description: Not Found
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1091,7 +1091,7 @@ paths:
         '403':
           description: Forbidden
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1180,7 +1180,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1253,7 +1253,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1274,7 +1274,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1329,7 +1329,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1343,7 +1343,7 @@ paths:
         '401':
           description: Unauthorized
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1357,7 +1357,7 @@ paths:
         '409':
           description: Conflict
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1431,7 +1431,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1445,7 +1445,7 @@ paths:
         '401':
           description: Unauthorized
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:
@@ -1489,7 +1489,7 @@ paths:
         '400':
           description: Bad Request
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
                 properties:

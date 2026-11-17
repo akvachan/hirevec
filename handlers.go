@@ -324,7 +324,15 @@ func JSON(w http.ResponseWriter, responseBody any, status int) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	switch responseBody.(type) {
+	default:
+		w.Header().Set("Content-Type", "application/json")
+	case Problem:
+		w.Header().Set("Content-Type", "application/problem+json")
+	case *Problem:
+		w.Header().Set("Content-Type", "application/problem+json")
+	}
+
 	w.WriteHeader(status)
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		slog.Debug("failed to write response to client", "err", err)
