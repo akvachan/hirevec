@@ -4,8 +4,8 @@
 
 TLS is disabled by default, because:
 
-    A) You may run this app via a reverse proxy that already enables TLS communication.
-    B) You are developing and don't want to experience the burden of TLS-related infra, including setting up a proper CA and securing local certificate management.
+A) You may run this app via a reverse proxy that already enables TLS communication.
+B) You are developing and don't want to experience the burden of TLS-related infra, including setting up a proper CA and securing local certificate management.
 
 You can enable TLS via `HIREVEC_TLS_ENABLED=true`. You must then provide `HIREVEC_TLS_CERT_FILE`
 and `HIREVEC_TLS_KEY_FILE`. Make sure that these files are configured to have 0o600 permissions,
@@ -42,9 +42,9 @@ A user's identity is anchored to a [WebAuthn](https://en.wikipedia.org/wiki/WebA
 [passkey](https://en.wikipedia.org/wiki/Passkey). Passkeys are used to obtain initial access token
 and refresh token via following flow:
 
-    1. Server generates a challenge and other parameters.
-    2. Inside the browser, user creates or retrieves a passkey.
-    3. Server validates the challenge and other parameters.
+1. Server generates a challenge and other parameters.
+2. Inside the browser, user creates or retrieves a passkey.
+3. Server validates the challenge and other parameters.
 
 Login is discoverable and usernameless: the user never types an email to sign in, the authenticator
 identifies the account. Registration requires an email and a full name. An account has exactly one
