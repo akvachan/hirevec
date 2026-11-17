@@ -76,14 +76,21 @@ type RouteConfig struct {
 	Roles     []Role
 	RateLimit rate.Limit
 	Burst     int
+	NoAPIKey  bool
 }
 
 func (a *API) PublicRoute(c RouteConfig) {
-	handler := a.MiddlewareChain(
-		c.Handler,
+	handler := a.MiddlewareChain(c.Handler, a.MiddlewareLogging)
+	if !c.NoAPIKey && a.APIKey != "" {
+		handler = a.MiddlewareChain(handler, a.MiddlewareAPIKey)
+	}
+	if a.RateLimitingEnabled {
+		handler = a.MiddlewareChain(handler, a.MiddlewareRateLimit(c.RateLimit, c.Burst))
+	}
+	handler = a.MiddlewareChain(
+		handler,
 		a.MiddlewareLogging,
-		a.MiddlewareRateLimiter(c.RateLimit, c.Burst),
-		a.MiddlewareAPIKey,
+		a.MiddlewareRateLimit(c.RateLimit, c.Burst),
 		a.MiddlewareSecurityHeaders,
 		a.MiddlewarePanicRecovery,
 		a.MiddlewareMaxBytesLimit,
@@ -101,11 +108,17 @@ func (a *API) PrivateRoute(c RouteConfig) {
 		rolesMap[role] = true
 	}
 
-	handler := a.MiddlewareChain(
-		c.Handler,
+	handler := a.MiddlewareChain(c.Handler, a.MiddlewareLogging)
+	if !c.NoAPIKey && a.APIKey != "" {
+		handler = a.MiddlewareChain(handler, a.MiddlewareAPIKey)
+	}
+	if a.RateLimitingEnabled {
+		handler = a.MiddlewareChain(handler, a.MiddlewareRateLimit(c.RateLimit, c.Burst))
+	}
+	handler = a.MiddlewareChain(
+		handler,
 		a.MiddlewareLogging,
-		a.MiddlewareRateLimiter(c.RateLimit, c.Burst),
-		a.MiddlewareAPIKey,
+		a.MiddlewareRateLimit(c.RateLimit, c.Burst),
 		a.MiddlewareSecurityHeaders,
 		a.MiddlewarePanicRecovery,
 		a.MiddlewareMaxBytesLimit,
@@ -127,6 +140,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerOpenAPI,
 		RateLimit: RateLimitStatic,
 		Burst:     BurstStatic,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -135,6 +149,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerDocs,
 		RateLimit: RateLimitStatic,
 		Burst:     BurstStatic,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -143,6 +158,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerHealth,
 		RateLimit: RateLimitHealth,
 		Burst:     BurstHealth,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -151,6 +167,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerPasskeys,
 		RateLimit: RateLimitStatic,
 		Burst:     BurstStatic,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -159,6 +176,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerWebAuthnRegisterStart(),
 		RateLimit: RateLimitAuth,
 		Burst:     BurstAuth,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -167,6 +185,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerWebAuthnRegisterFinish(),
 		RateLimit: RateLimitAuth,
 		Burst:     BurstAuth,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -175,6 +194,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerWebAuthnLoginStart(),
 		RateLimit: RateLimitAuth,
 		Burst:     BurstAuth,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{
@@ -183,6 +203,7 @@ func (a *API) RegisterRoutes() {
 		Handler:   a.HandlerWebAuthnLoginFinish(),
 		RateLimit: RateLimitAuth,
 		Burst:     BurstAuth,
+		NoAPIKey:  true,
 	})
 
 	a.PublicRoute(RouteConfig{

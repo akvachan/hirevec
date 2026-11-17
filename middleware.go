@@ -79,14 +79,9 @@ func (rl *RateLimiter) Allow(limiter *rate.Limiter) (bool, time.Duration) {
 	return true, 0
 }
 
-func (a *API) MiddlewareRateLimiter(rateLimit rate.Limit, burst int) Middleware {
+func (a *API) MiddlewareRateLimit(rateLimit rate.Limit, burst int) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if !a.RateLimitingEnabled {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			endpoint := r.Pattern
 			if endpoint == "" {
 				endpoint = r.URL.Path
@@ -149,11 +144,6 @@ func (a *API) ClientIP(r *http.Request) string {
 
 func (a *API) MiddlewareAPIKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if a.APIKey == "" {
-			next.ServeHTTP(w, r)
-			return
-		}
-
 		apiKey := r.Header.Get("X-API-Key")
 
 		if apiKey == "" {
