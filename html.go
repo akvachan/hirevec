@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Arsenii Kvachan
+// SPDX-License-Identifier: Unlicense
+
 package hirevec
 
 const SwaggerUIHTML = `
