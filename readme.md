@@ -60,7 +60,7 @@ or
 
 ```sh
 go run cmd/genevals/main.go \
-    --out data/evaluation \
+    --out data/evaluation/ \
     --seed 42 \
     --positions 30000 \
     --candidates 100 \
