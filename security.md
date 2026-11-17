@@ -103,11 +103,3 @@ behind a reverse proxy every request would be attributed to the proxy. Set `HIRE
 only when the server is reached through a trusted reverse proxy that appends to `X-Forwarded-For`;
 with a single trusted proxy the rightmost `X-Forwarded-For` entry is used as the client IP. The header is
 never trusted without this flag because clients can spoof it.
-
-## Threat model notes
-
-- There is currently no rate limiting. When the API key is disabled, anonymous clients can create an
-  unlimited number of users. Freshly created users hold no roles, so no private data is exposed to them,
-  but the database growth is unbounded.
-- The candidate and recruiter roles are self-assigned by any authenticated user; the authorization
-  layer treats having an account as the only real boundary.
